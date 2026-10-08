@@ -64,6 +64,30 @@ async function groundSpeckle(page: Page, png: Buffer): Promise<number> {
   }, png.toString("base64"));
 }
 
+/** Share of pixels whose colour differs by more than 12 (on any channel) between two same-size screenshots. */
+async function changedPixelShare(page: Page, first: Buffer, second: Buffer): Promise<number> {
+  return page.evaluate(async ([firstBase64, secondBase64]) => {
+    const decode = async (base64: string): Promise<Uint8ClampedArray> => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${base64}`;
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("no 2d context");
+      context.drawImage(image, 0, 0);
+      return context.getImageData(0, 0, image.width, image.height).data;
+    };
+    const a = await decode(firstBase64), b = await decode(secondBase64);
+    let changed = 0;
+    for (let i = 0; i < a.length; i += 4) {
+      if (Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2])) > 12) changed++;
+    }
+    return changed / (a.length / 4);
+  }, [first.toString("base64"), second.toString("base64")]);
+}
+
 test("the ride loads, renders terrain and logs no errors", async ({ page }) => {
   const errors = collectErrors(page);
 
@@ -164,5 +188,36 @@ test("warped ground is lit smoothly, without per-pixel speckle", async ({ page }
   const speckle = await groundSpeckle(page, await page.locator("#view").screenshot());
   test.info().annotations.push({ type: "ground speckle", description: `${(speckle * 100).toFixed(3)}%` });
   expect(speckle).toBeLessThan(0.0005);
+  expect(errors).toEqual([]);
+});
+
+test("a nearly faded-out ceiling is invisible against the sky", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.emulateMedia({ reducedMotion: "reduce" }); // paused, so only the ceiling changes between screenshots
+  await page.goto("./?seed=4242");
+  await expect(page.locator("#readout")).toHaveText("0 m", { timeout: 30_000 });
+  await page.addStyleTag({ content: ".hud { visibility: hidden; }" });
+  const nextFrames = () => page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await nextFrames();
+  const withoutCeiling = await page.locator("#view").screenshot();
+
+  // Ceiling 0.02 draws the mirrored world about 99% faded. It used to fade toward flat fog colour and showed as a
+  // pale slab (and its far edge jumped forward with each new chunk); fading into the sky makes it vanish.
+  // The HUD is hidden for clean screenshots, so drive the controls through their input events.
+  await page.evaluate(() => {
+    const manual = document.getElementById("manual"), ceiling = document.getElementById("warp7");
+    if (!(manual instanceof HTMLInputElement) || !(ceiling instanceof HTMLInputElement)) throw new Error("missing warp controls");
+    manual.checked = true;
+    manual.dispatchEvent(new Event("input", { bubbles: true }));
+    ceiling.value = "0.02";
+    ceiling.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await expect(page.locator("#warp7Out")).toHaveText("0.02", { timeout: 30_000 });
+  await nextFrames();
+  const withFadedCeiling = await page.locator("#view").screenshot();
+
+  const changed = await changedPixelShare(page, withoutCeiling, withFadedCeiling);
+  test.info().annotations.push({ type: "pixels changed by the faded ceiling", description: `${(changed * 100).toFixed(2)}%` });
+  expect(changed).toBeLessThan(0.002);
   expect(errors).toEqual([]);
 });

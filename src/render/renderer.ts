@@ -181,7 +181,8 @@ export class Renderer {
     gl.uniform1f(u.uEyeHeight, EYE_HEIGHT); gl.uniform1f(u.uHalfWidth, HALF_WIDTH); gl.uniform1f(u.uFogEnd, FOG_END);
     gl.uniform1f(u.uWavePhase, (frame.travel * WAVE_FREQUENCY) % (Math.PI * 2)); // keeps the waves fixed to the ground, not the camera
     gl.uniform1f(u.uCeilingY, 260 + (46 - 260) * warps[Warp.CEILING]);
-    setRgb(gl, u.uFogColor, frame.fogColor); gl.uniform1f(u.uLight, frame.light);
+    setRgb(gl, u.uFogColor, frame.fogColor); setRgb(gl, u.uZenithColor, frame.zenithColor); gl.uniform1f(u.uLight, frame.light);
+    gl.uniform2f(u.uResolution, this.canvas.width, this.canvas.height);
     gl.uniform1f(u.uTwist, warps[Warp.TWIST] * strength); gl.uniform1f(u.uRoll, warps[Warp.ROLL] * strength);
     gl.uniform1f(u.uRise, warps[Warp.RISE] * strength); gl.uniform1f(u.uSwerve, warps[Warp.SWERVE] * strength);
     gl.uniform1f(u.uWave, warps[Warp.WAVES] * strength); gl.uniform1f(u.uStretch, warps[Warp.STRETCH] * strength);

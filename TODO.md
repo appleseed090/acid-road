@@ -46,26 +46,20 @@ with 1.4 ms of CPU per frame, 51 draws and 321k triangles (Ceiling active), so t
       stretches happen (4242 from 8,820 to 10,080 m), but over 200 seeds x 50 km the ride is fully calm only
       5% of the distance; each warp is active (above 0.05) for 28 to 30% of it.
 - [x] **The mirrored Ceiling warp.** At full strength, tall pillars from the main world pierce the mirrored
-      layer and join floor to ceiling; it reads as deliberate. During the fade-in (Ceiling under 0.35) a pale
-      fog-coloured wedge of the mirrored world shows in the sky (4242, `at=7260`); subtle. The keyframe rule
-      that keeps Ceiling out of a closed tube does not cover blends between keyframes (4242, `at=7220` mixes
-      Roll 0.46 with Ceiling 0.09), but those frames look fine. Its cost (double draws and triangles) is still
-      unmeasured on real GPUs, and Ceiling is active for about 28% of the distance like every other warp.
+      layer and join floor to ceiling; it reads as deliberate. The keyframe rule that keeps Ceiling out of a
+      closed tube does not cover blends between keyframes (4242, `at=7220` mixes Roll 0.46 with Ceiling 0.09),
+      but those frames look fine. Its double draw (51 draws, ~345k triangles) holds 60 FPS on the Mac and iPhone
+      measured above.
+- [x] **Ceiling fade-in and the ceiling's far edge.** Distant and fading terrain faded toward a flat fog colour,
+      which matches the sky only at the screen centre. The mirrored ceiling showed as a pale slab while fading in,
+      and its fogged far edge showed as a blocky shape that jumped 16 blocks forward with every new chunk. Terrain
+      now fades into the sky shader's colour at each pixel. Calm rides change on about 0.2% of pixels; a full
+      Ceiling's distant sides now take the deeper sky colour behind them.
+- [x] **Ceiling frequency** stays as it is (about 28% of the road, like every warp): the owner prefers it. A
+      "keep a drawn Ceiling half the time" rule (16.8%) was prototyped and declined.
 - [x] **Triangle checkerboard on warped ground** (4242, `at=8400`). Not a separate effect: the derivative-normal
       flip lit one triangle of each bent quad and darkened the other. Gone since that flip was removed; per-vertex
       warped normals were prototyped and change under 0.1% of pixels now, so they are not needed.
-
-## Open look decisions (prototyped, waiting for the owner)
-
-- [ ] **Ceiling fade-in.** Below Ceiling 0.35 the mirrored world is faded toward flat fog colour, so it appears
-      as a pale slab. Prototype: fade it into the sky shader's colour at each pixel instead, so it fades in as a
-      see-through ghost. Changes only the top of the screen during fade-in.
-- [ ] **Ceiling frequency.** Ceiling is on for 27.7% of the road (200 seeds x 50 km), like every warp.
-      Prototype: when a keyframe draws Ceiling, keep it half the time, otherwise draw once more. Result: 16.8%,
-      the other warps about 31% each, calm unchanged at 5%. Changes the world, so the spike golden warp
-      keyframes would be updated on purpose.
-
-
 
 ## Deferred refactors and ideas (not for the port)
 

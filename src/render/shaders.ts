@@ -1,6 +1,20 @@
 import { WAVE_FREQUENCY } from "../world/constants";
 
 /**
+ * The sky's colour at this pixel: a radial gradient from the fog colour at the screen centre to the zenith colour
+ * at the edges, plus a little grain against banding. Radial rather than top-to-bottom, so the sky still reads
+ * correctly when the world is twisted or rolled. Shared by the sky and terrain shaders so distant terrain can fade
+ * into exactly the sky behind it.
+ */
+const SKY_COLOR_GLSL = `uniform vec2 uResolution; uniform vec3 uFogColor, uZenithColor;
+vec3 skyColor() {
+  vec2 fromCentre = (gl_FragCoord.xy * 2.0 - uResolution) / min(uResolution.x, uResolution.y);
+  float t = smoothstep(0.05, 1.3, length(fromCentre));
+  float grain = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) / 255.0;
+  return mix(uFogColor, uZenithColor, t) + grain;
+}`;
+
+/**
  * Warps the static world as a function of each vertex's distance ahead of the camera. Uniform order of the
  * warp strengths matches {@link WARPS}; Ceiling is applied by drawing the world a second time mirrored.
  */
@@ -45,7 +59,8 @@ void main() {
 export const TERRAIN_FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 in vec3 vViewPosition; in vec4 vColor; in float vFaceShade; in float vFog;
-uniform vec3 uFogColor; uniform float uLight, uMirrorFade;
+uniform float uLight, uMirrorFade;
+${SKY_COLOR_GLSL}
 out vec4 outColor;
 void main() {
   // The stored normals are wrong once the mesh is warped, so take the true face normal from the warped surface.
@@ -55,8 +70,11 @@ void main() {
   float diffuse = max(dot(normal, normalize(vec3(0.35, 0.8, 0.45))), 0.0);
   vec3 lit = vColor.rgb * vFaceShade * mix(0.6, 1.15, diffuse) * uLight;
   vec3 color = mix(lit, vColor.rgb * 1.35, vColor.a);
+  // Fade into the sky behind this pixel, not a flat fog colour: away from the screen centre the sky is not the fog
+  // colour, so the fogged far edge of the world (notably the mirrored ceiling) showed as a shape that jumped
+  // forward with every new chunk, and the fading mirrored world showed as a pale slab.
   float fog = max(vFog * (1.0 - 0.45 * vColor.a), uMirrorFade);
-  outColor = vec4(mix(color, uFogColor, fog), 1.0);
+  outColor = vec4(mix(color, skyColor(), fog), 1.0);
 }`;
 
 /** Full-screen triangle generated from gl_VertexID; needs no vertex buffers. */
@@ -65,19 +83,14 @@ void main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2
 
 export const SKY_FRAGMENT_SHADER = `#version 300 es
 precision highp float;
-uniform vec2 uResolution; uniform vec3 uFogColor, uZenithColor;
+${SKY_COLOR_GLSL}
 out vec4 outColor;
-void main() {
-  // Radial rather than top-to-bottom, so the sky still reads correctly when the world is twisted or rolled.
-  vec2 fromCentre = (gl_FragCoord.xy * 2.0 - uResolution) / min(uResolution.x, uResolution.y);
-  float t = smoothstep(0.05, 1.3, length(fromCentre));
-  float grain = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) / 255.0;
-  outColor = vec4(mix(uFogColor, uZenithColor, t) + grain, 1.0);
-}`;
+void main() { outColor = vec4(skyColor(), 1.0); }`;
 
 export const TERRAIN_UNIFORMS = [
   "uProjection", "uChunkZ", "uEyeHeight", "uHalfWidth", "uWavePhase", "uMirror", "uCeilingY", "uFogEnd",
-  "uTwist", "uRoll", "uRise", "uSwerve", "uWave", "uStretch", "uPinch", "uFogColor", "uLight", "uMirrorFade",
+  "uTwist", "uRoll", "uRise", "uSwerve", "uWave", "uStretch", "uPinch", "uFogColor", "uZenithColor", "uResolution",
+  "uLight", "uMirrorFade",
 ] as const;
 
 export const SKY_UNIFORMS = ["uResolution", "uFogColor", "uZenithColor"] as const;

@@ -85,6 +85,9 @@ Supporting tricks:
 - **Screen-space normals.** The stored face normals are wrong once a face is bent, so the fragment shader
   rebuilds the true normal from screen-space derivatives of the warped position (`dFdx`/`dFdy`).
 - **Long faces are subdivided** so they have enough vertices to bend smoothly.
+- **Distance fades into the sky, not into a flat fog colour.** The terrain shader computes the same radial sky
+  gradient as the sky behind it, so the end of the loaded world (and the mirrored ceiling as it fades in)
+  dissolves into whatever part of the sky it is drawn over, even when warps lift it far from the screen centre.
 
 ## Architecture
 
