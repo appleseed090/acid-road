@@ -64,10 +64,16 @@ async function groundSpeckle(page: Page, png: Buffer): Promise<number> {
   }, png.toString("base64"));
 }
 
-/** Share of pixels whose colour differs by more than 12 (on any channel) between two same-size screenshots. */
-async function changedPixelShare(page: Page, first: Buffer, second: Buffer): Promise<number> {
-  return page.evaluate(async ([firstBase64, secondBase64]) => {
-    const decode = async (base64: string): Promise<Uint8ClampedArray> => {
+/** A rectangle in screenshot pixels: left, top, right, bottom (exclusive). */
+type PixelBox = readonly [number, number, number, number];
+
+/**
+ * Share of pixels whose colour differs by more than 12 (on any channel) between two same-size screenshots,
+ * optionally only inside `box`.
+ */
+async function changedPixelShare(page: Page, first: Buffer, second: Buffer, box?: PixelBox): Promise<number> {
+  return page.evaluate(async ([firstBase64, secondBase64, region]) => {
+    const decode = async (base64: string): Promise<ImageData> => {
       const image = new Image();
       image.src = `data:image/png;base64,${base64}`;
       await image.decode();
@@ -77,15 +83,17 @@ async function changedPixelShare(page: Page, first: Buffer, second: Buffer): Pro
       const context = canvas.getContext("2d");
       if (!context) throw new Error("no 2d context");
       context.drawImage(image, 0, 0);
-      return context.getImageData(0, 0, image.width, image.height).data;
+      return context.getImageData(0, 0, image.width, image.height);
     };
     const a = await decode(firstBase64), b = await decode(secondBase64);
+    const [left, top, right, bottom] = region ?? [0, 0, a.width, a.height];
     let changed = 0;
-    for (let i = 0; i < a.length; i += 4) {
-      if (Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2])) > 12) changed++;
+    for (let y = top; y < bottom; y++) for (let x = left; x < right; x++) {
+      const i = (y * a.width + x) * 4;
+      if (Math.max(Math.abs(a.data[i] - b.data[i]), Math.abs(a.data[i + 1] - b.data[i + 1]), Math.abs(a.data[i + 2] - b.data[i + 2])) > 12) changed++;
     }
-    return changed / (a.length / 4);
-  }, [first.toString("base64"), second.toString("base64")]);
+    return changed / ((right - left) * (bottom - top));
+  }, [first.toString("base64"), second.toString("base64"), box ?? null] as const);
 }
 
 test("the ride loads, renders terrain and logs no errors", async ({ page }) => {
@@ -218,6 +226,27 @@ test("a nearly faded-out ceiling is invisible against the sky", async ({ page })
 
   const changed = await changedPixelShare(page, withoutCeiling, withFadedCeiling);
   test.info().annotations.push({ type: "pixels changed by the faded ceiling", description: `${(changed * 100).toFixed(2)}%` });
+  expect(changed).toBeLessThan(0.002);
+  expect(errors).toEqual([]);
+});
+
+test("a glowing gate does not pop into view when its chunk loads", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.setViewportSize({ width: 960, height: 540 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const shoot = async (at: string): Promise<Buffer> => {
+    await page.goto(`./?seed=2026&at=${at}`);
+    await expect(page.locator("#readout")).toHaveText(/ m$/, { timeout: 30_000 });
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.addStyleTag({ content: ".hud { visibility: hidden; }" });
+    return page.locator("#view").screenshot();
+  };
+  // Seed 2026 has a glowing gate 384 m out, in the chunk that loads when the ride passes 16 m. Two centimetres
+  // either side, the camera barely moves, so around the vanishing point only the new chunk can change pixels.
+  // Glowing blocks used to stay 45% visible through full fog and popped in there (22 changed pixels; 0 now).
+  const beforeLoad = await shoot("15.99"), afterLoad = await shoot("16.01");
+  const changed = await changedPixelShare(page, beforeLoad, afterLoad, [440, 240, 520, 270]);
+  test.info().annotations.push({ type: "pixels changed near the vanishing point", description: `${(changed * 100).toFixed(2)}%` });
   expect(changed).toBeLessThan(0.002);
   expect(errors).toEqual([]);
 });

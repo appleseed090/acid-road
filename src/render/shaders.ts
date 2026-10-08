@@ -26,11 +26,14 @@ layout(location=2) in vec3 aNormal;
 uniform mat4 uProjection;
 uniform float uChunkZ, uEyeHeight, uHalfWidth, uWavePhase, uMirror, uCeilingY, uFogEnd;
 uniform float uTwist, uRoll, uRise, uSwerve, uWave, uStretch, uPinch;
-out vec3 vViewPosition; out vec4 vColor; out float vFaceShade; out float vFog;
+out vec3 vViewPosition; out vec4 vColor; out float vFaceShade; out float vFog; out float vGlowThroughFog;
 void main() {
   vec3 p = vec3(aPosition.xy, aPosition.z + uChunkZ);
   float ahead = max(p.z, 0.0);          // every warp grows with distance ahead, so the world unrolls as you reach it
   vFog = max(smoothstep(uFogEnd * 0.35, uFogEnd, length(p.xz)), smoothstep(uHalfWidth * 0.6, uHalfWidth * 0.98, abs(p.x)));
+  // Glowing blocks show through the fog, but that must end before the far edge where new chunks appear (just past
+  // uFogEnd), or a glowing gate would pop into view as its chunk loads.
+  vGlowThroughFog = 1.0 - smoothstep(uFogEnd * 0.8, uFogEnd, length(p.xz));
 
   p.y *= 1.0 + uStretch * (uStretch > 0.0 ? 2.5 : 0.9) * smoothstep(8.0, 160.0, ahead);
   p.y += uWave * smoothstep(0.0, 40.0, ahead) * (5.0 * sin(p.z * ${WAVE_FREQUENCY.toFixed(3)} + uWavePhase) * cos(p.x * 0.035) + 2.0 * sin(p.x * 0.11 + p.z * 0.02 + uWavePhase));
@@ -58,7 +61,7 @@ void main() {
 
 export const TERRAIN_FRAGMENT_SHADER = `#version 300 es
 precision highp float;
-in vec3 vViewPosition; in vec4 vColor; in float vFaceShade; in float vFog;
+in vec3 vViewPosition; in vec4 vColor; in float vFaceShade; in float vFog; in float vGlowThroughFog;
 uniform float uLight, uMirrorFade;
 ${SKY_COLOR_GLSL}
 out vec4 outColor;
@@ -73,7 +76,7 @@ void main() {
   // Fade into the sky behind this pixel, not a flat fog colour: away from the screen centre the sky is not the fog
   // colour, so the fogged far edge of the world (notably the mirrored ceiling) showed as a shape that jumped
   // forward with every new chunk, and the fading mirrored world showed as a pale slab.
-  float fog = max(vFog * (1.0 - 0.45 * vColor.a), uMirrorFade);
+  float fog = max(vFog * (1.0 - 0.45 * vColor.a * vGlowThroughFog), uMirrorFade);
   outColor = vec4(mix(color, skyColor(), fog), 1.0);
 }`;
 

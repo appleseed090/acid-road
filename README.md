@@ -88,6 +88,8 @@ Supporting tricks:
 - **Distance fades into the sky, not into a flat fog colour.** The terrain shader computes the same radial sky
   gradient as the sky behind it, so the end of the loaded world (and the mirrored ceiling as it fades in)
   dissolves into whatever part of the sky it is drawn over, even when warps lift it far from the screen centre.
+  Glowing blocks show through the fog at mid-distance, but are fully fogged too before the far edge, so nothing
+  pops into view as a new chunk loads.
 
 ## Architecture
 

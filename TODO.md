@@ -55,6 +55,10 @@ with 1.4 ms of CPU per frame, 51 draws and 321k triangles (Ceiling active), so t
       and its fogged far edge showed as a blocky shape that jumped 16 blocks forward with every new chunk. Terrain
       now fades into the sky shader's colour at each pixel. Calm rides change on about 0.2% of pixels; a full
       Ceiling's distant sides now take the deeper sky colour behind them.
+- [x] **Glowing gates popped into view.** Emissive blocks are fogged at most 55% so they glow through the haze,
+      which left them 45% visible at the far edge where new chunks appear (just past `FOG_END`), so glowing gates,
+      lamps and road stripes popped in as their chunk loaded. The glow-through now fades out between 80% and
+      100% of `FOG_END`, so everything is fully fogged before it can appear.
 - [x] **Ceiling frequency** stays as it is (about 28% of the road, like every warp): the owner prefers it. A
       "keep a drawn Ceiling half the time" rule (16.8%) was prototyped and declined.
 - [x] **Triangle checkerboard on warped ground** (4242, `at=8400`). Not a separate effect: the derivative-normal
