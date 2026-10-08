@@ -51,11 +51,21 @@ with 1.4 ms of CPU per frame, 51 draws and 321k triangles (Ceiling active), so t
       that keeps Ceiling out of a closed tube does not cover blends between keyframes (4242, `at=7220` mixes
       Roll 0.46 with Ceiling 0.09), but those frames look fine. Its cost (double draws and triangles) is still
       unmeasured on real GPUs, and Ceiling is active for about 28% of the distance like every other warp.
+- [x] **Triangle checkerboard on warped ground** (4242, `at=8400`). Not a separate effect: the derivative-normal
+      flip lit one triangle of each bent quad and darkened the other. Gone since that flip was removed; per-vertex
+      warped normals were prototyped and change under 0.1% of pixels now, so they are not needed.
 
-## Known issues
+## Open look decisions (prototyped, waiting for the owner)
 
-- [ ] Under Pinch and Roll, warped ground quads stop being flat and each triangle takes its own shade, giving a
-      triangle checkerboard (4242, `at=8400`). A property of flat derivative normals; may be fine as a style.
+- [ ] **Ceiling fade-in.** Below Ceiling 0.35 the mirrored world is faded toward flat fog colour, so it appears
+      as a pale slab. Prototype: fade it into the sky shader's colour at each pixel instead, so it fades in as a
+      see-through ghost. Changes only the top of the screen during fade-in.
+- [ ] **Ceiling frequency.** Ceiling is on for 27.7% of the road (200 seeds x 50 km), like every warp.
+      Prototype: when a keyframe draws Ceiling, keep it half the time, otherwise draw once more. Result: 16.8%,
+      the other warps about 31% each, calm unchanged at 5%. Changes the world, so the spike golden warp
+      keyframes would be updated on purpose.
+
+
 
 ## Deferred refactors and ideas (not for the port)
 
