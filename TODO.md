@@ -23,12 +23,6 @@ The prototype and this port have only run on a software renderer (SwiftShader in
 - [ ] **The mirrored Ceiling warp.** It is the roughest one: it draws the whole world a second time, clips
       against the main world in some combinations, and costs double the draw calls.
 
-## Known issues kept from the prototype
-
-- [ ] `#fail` has `display: grid` in CSS, which overrides its `hidden` attribute. It is empty and transparent,
-      so nothing shows, but an invisible full-screen box sits between the canvas and the HUD. Fix with
-      `#fail[hidden] { display: none; }`. The smoke test checks it is empty rather than hidden until then.
-
 ## Deferred refactors and ideas (not for the port)
 
 - [ ] The vertex cap (200,000 per chunk) is far above real use: across many seeds the largest chunk seen was

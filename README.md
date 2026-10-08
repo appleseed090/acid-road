@@ -87,6 +87,11 @@ Playwright smoke test against the built site. Only if all of that passes does it
 Pages. A final job reruns the smoke test against the live URL. The Vite `base` is `/acid-road/` to match
 the Pages URL.
 
+## Contributing
+
+See [AGENTS.md](AGENTS.md) for the invariants the code depends on, test rules and conventions, and
+[TODO.md](TODO.md) for open work.
+
 ## Decisions
 
 - **Faithful port.** The first version reproduces the prototype exactly: chunk meshes and keyframes are

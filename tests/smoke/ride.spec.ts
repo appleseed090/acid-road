@@ -37,11 +37,10 @@ test("the ride loads, renders terrain and logs no errors", async ({ page }) => {
   await expect(page).toHaveTitle("Acid Road");
   const readout = page.locator("#readout"), failure = page.locator("#fail");
   // The readout first updates inside the frame loop, so text there means the shaders compiled and frames are running.
-  await expect.poll(async () => errors.length > 0 || (await failure.innerText()) !== "" || (await readout.innerText()) !== "", { timeout: 30_000 })
+  await expect.poll(async () => errors.length > 0 || (await failure.textContent()) !== "" || (await readout.innerText()) !== "", { timeout: 30_000 })
     .toBe(true);
   expect(errors).toEqual([]);
-  // #fail keeps display:grid even when hidden (see TODO.md), so check it carries no failure message instead.
-  await expect(failure).toHaveText("");
+  await expect(failure).toBeHidden();
   await expect.poll(async () => Number((await readout.innerText()).replace(/[^0-9]/g, "")), { timeout: 30_000 }).toBeGreaterThan(0);
 
   await page.addStyleTag({ content: ".hud { visibility: hidden; }" });

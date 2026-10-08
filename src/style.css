@@ -42,3 +42,4 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 input[type=range] { width: 100%; accent-color: var(--accent); min-width: 0; }
 input[type=range]:disabled { opacity: 0.85; }
 #fail { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; text-align: center; line-height: 1.5; }
+#fail[hidden] { display: none; }
