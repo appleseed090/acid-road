@@ -42,13 +42,6 @@ with 1.4 ms of CPU per frame, 51 draws and 321k triangles (Ceiling active), so t
 
 ## Known issues
 
-- [ ] **Speckled ground and a two-tone road under warps** (inherited from the prototype). The terrain fragment
-      shader flips the derivative normal when `normal.z < 0`, but `cross(dFdx(p), dFdy(p))` already faces the
-      camera. On floors and roads the normal's z is near 0, so float noise flips pixels between lit and unlit:
-      per-pixel speckle under Roll (4242, `at=2520`; 4242, `at=10290`), a road split into light and dark
-      halves under Twist (4242, `at=7980`), and faint streaks even on calm stretches. Removing the flip fixed
-      all of these in a test build without changing anything else visible. It changes the look, so it waits
-      for the owner's go-ahead.
 - [ ] Under Pinch and Roll, warped ground quads stop being flat and each triangle takes its own shade, giving a
       triangle checkerboard (4242, `at=8400`). A property of flat derivative normals; may be fine as a style.
 

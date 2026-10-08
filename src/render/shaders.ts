@@ -49,8 +49,9 @@ uniform vec3 uFogColor; uniform float uLight, uMirrorFade;
 out vec4 outColor;
 void main() {
   // The stored normals are wrong once the mesh is warped, so take the true face normal from the warped surface.
+  // The cross product of screen-space derivatives always faces the camera, so it needs no flipping: flipping on
+  // normal.z < 0 turned float noise on floors (where z is near 0) into per-pixel speckle.
   vec3 normal = normalize(cross(dFdx(vViewPosition), dFdy(vViewPosition)));
-  if (normal.z < 0.0) normal = -normal;
   float diffuse = max(dot(normal, normalize(vec3(0.35, 0.8, 0.45))), 0.0);
   vec3 lit = vColor.rgb * vFaceShade * mix(0.6, 1.15, diffuse) * uLight;
   vec3 color = mix(lit, vColor.rgb * 1.35, vColor.a);

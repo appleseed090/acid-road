@@ -34,6 +34,36 @@ function collectErrors(page: Page): string[] {
   return errors;
 }
 
+/**
+ * Fraction of pixels in the lower 40% of a screenshot that are isolated horizontal luminance spikes (brighter
+ * or darker than both neighbours by more than 12). Measures lighting speckle on the ground.
+ */
+async function groundSpeckle(page: Page, png: Buffer): Promise<number> {
+  return page.evaluate(async (base64) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${base64}`;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("no 2d context");
+    context.drawImage(image, 0, 0);
+    const { data, width, height } = context.getImageData(0, 0, image.width, image.height);
+    const luminance = (x: number, y: number): number => {
+      const o = (y * width + x) * 4;
+      return 0.299 * data[o] + 0.587 * data[o + 1] + 0.114 * data[o + 2];
+    };
+    let spikes = 0, total = 0;
+    for (let y = Math.floor(height * 0.6); y < height; y++) for (let x = 1; x < width - 1; x++) {
+      const here = luminance(x, y), left = luminance(x - 1, y), right = luminance(x + 1, y);
+      total++;
+      if ((here - left) * (here - right) > 0 && Math.abs(here - left) > 12 && Math.abs(here - right) > 12) spikes++;
+    }
+    return spikes / total;
+  }, png.toString("base64"));
+}
+
 test("the ride loads, renders terrain and logs no errors", async ({ page }) => {
   const errors = collectErrors(page);
 
@@ -119,5 +149,20 @@ test("Show stats and Hide stats toggle the overlay and the ?stats flag", async (
   await expect(overlay).toHaveCount(0);
   await expect(button).toHaveText("Show stats");
   expect(new URL(page.url()).search).toBe("?seed=4242");
+  expect(errors).toEqual([]);
+});
+
+test("warped ground is lit smoothly, without per-pixel speckle", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  // Roll 0.74: the frame where flipping derivative normals on normal.z < 0 speckled the ground worst
+  // (0.56% spike pixels; 0.000% once fixed).
+  await page.goto("./?seed=4242&at=2520");
+  await expect(page.locator("#readout")).toHaveText("2,520 m", { timeout: 30_000 });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.addStyleTag({ content: ".hud { visibility: hidden; }" });
+  const speckle = await groundSpeckle(page, await page.locator("#view").screenshot());
+  test.info().annotations.push({ type: "ground speckle", description: `${(speckle * 100).toFixed(3)}%` });
+  expect(speckle).toBeLessThan(0.0005);
   expect(errors).toEqual([]);
 });
