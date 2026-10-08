@@ -24,6 +24,12 @@ export interface FrameState {
   readonly light: number;
 }
 
+/** What one {@link Renderer.draw} call submitted to the GPU. */
+export interface DrawStats {
+  readonly drawCalls: number;
+  readonly triangles: number;
+}
+
 export type RendererResult =
   | { readonly ok: true; readonly renderer: Renderer }
   | { readonly ok: false; readonly reason: "no-webgl2" | "shader-error"; readonly error?: Error };
@@ -124,25 +130,41 @@ export class Renderer {
 
   /**
    * Recycles chunks that fell behind `travel` into the nearest missing slots ahead. Builds at most `budget`
-   * chunks, nearest first, so a few per frame avoids hitches.
+   * chunks, nearest first, so a few per frame avoids hitches. Returns how many it built.
    */
-  streamChunks(world: World, travel: number, budget: number): void {
+  streamChunks(world: World, travel: number, budget: number): number {
     const first = Math.floor(travel / CHUNK_LENGTH) - CHUNKS_BEHIND, last = first + CHUNK_COUNT - 1;
     const present = new Set<number>(), free: ChunkSlot[] = [];
     for (const chunk of this.chunks) {
       if (chunk.chunkIndex !== null && chunk.chunkIndex >= first && chunk.chunkIndex <= last) present.add(chunk.chunkIndex);
       else free.push(chunk);
     }
-    for (let index = first; index <= last && budget > 0; index++) {
+    let built = 0;
+    for (let index = first; index <= last && built < budget; index++) {
       if (present.has(index)) continue;
       const slot = free.pop();
       if (!slot) break;
       this.loadChunk(world, slot, index);
-      budget--;
+      built++;
     }
+    return built;
   }
 
-  draw(frame: FrameState): void {
+  /**
+   * The GPU and driver as the browser reports them, for the stats overlay. Browsers may mask or round this,
+   * and software rendering shows up here (for example "SwiftShader").
+   */
+  describeGpu(): string {
+    const { gl } = this;
+    const renderer = String(gl.getParameter(gl.RENDERER));
+    // Chrome and Safari report a generic name unless asked through the debug extension; Firefox reports the
+    // real (sanitised) name directly and warns that the extension is deprecated, so only ask when needed.
+    if (renderer !== "WebKit WebGL") return renderer;
+    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+    return debugInfo ? String(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)) : renderer;
+  }
+
+  draw(frame: FrameState): DrawStats {
     const { gl } = this;
     this.resize();
     gl.disable(gl.DEPTH_TEST);
@@ -164,8 +186,12 @@ export class Renderer {
     gl.uniform1f(u.uRise, warps[Warp.RISE] * strength); gl.uniform1f(u.uSwerve, warps[Warp.SWERVE] * strength);
     gl.uniform1f(u.uWave, warps[Warp.WAVES] * strength); gl.uniform1f(u.uStretch, warps[Warp.STRETCH] * strength);
     gl.uniform1f(u.uPinch, warps[Warp.PINCH] * strength);
-    this.drawTerrain(frame, false);
-    if (warps[Warp.CEILING] > 0.01) this.drawTerrain(frame, true);
+    let terrain = this.drawTerrain(frame, false);
+    if (warps[Warp.CEILING] > 0.01) {
+      const mirrored = this.drawTerrain(frame, true);
+      terrain = { drawCalls: terrain.drawCalls + mirrored.drawCalls, triangles: terrain.triangles + mirrored.triangles };
+    }
+    return { drawCalls: terrain.drawCalls + 1, triangles: terrain.triangles + 1 };
   }
 
   private loadChunk(world: World, slot: ChunkSlot, chunkIndex: number): void {
@@ -185,16 +211,20 @@ export class Renderer {
   }
 
   /** Draws every loaded chunk. Frustum culling is off on purpose: warped geometry does not match its unwarped bounds. */
-  private drawTerrain(frame: FrameState, mirror: boolean): void {
+  private drawTerrain(frame: FrameState, mirror: boolean): DrawStats {
     const { gl } = this, u = this.terrain.uniforms;
     gl.uniform1f(u.uMirror, mirror ? 1 : 0);
     gl.uniform1f(u.uMirrorFade, mirror ? 1 - smoothstep(0, 0.35, frame.warps[Warp.CEILING]) : 0);
+    let drawCalls = 0, triangles = 0;
     for (const chunk of this.chunks) {
       if (chunk.chunkIndex === null) continue;
       // Subtracted in doubles on the CPU, so there is no float drift however far the ride goes.
       gl.uniform1f(u.uChunkZ, chunk.chunkIndex * CHUNK_LENGTH - frame.travel);
       gl.bindVertexArray(chunk.vertexArray);
       gl.drawElements(gl.TRIANGLES, chunk.indexCount, gl.UNSIGNED_INT, 0);
+      drawCalls++;
+      triangles += chunk.indexCount / 3;
     }
+    return { drawCalls, triangles };
   }
 }

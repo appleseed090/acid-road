@@ -10,6 +10,26 @@ Controls: the panel at the bottom left sets speed, warp strength and view angle,
 by hand. **Space** pauses, **H** hides the controls, **New world** rolls a new seed. If your system asks for
 reduced motion, the ride starts paused.
 
+### Link options
+
+The address bar always holds a link to the current world, so you can share or bookmark a ride.
+
+| Parameter | Meaning | Example |
+| --- | --- | --- |
+| `seed` | World seed, 0 to 2147483647. Missing means a random world. | `?seed=4242` |
+| `at` | Start this many metres down the road, with the warps already as they are there. | `?seed=4242&at=5000` |
+| `stats` | Show a performance overlay: FPS, frame and CPU time, draw calls, triangles, chunk build time, canvas size, and the GPU the browser reports. | `?stats` |
+
+Invalid values are ignored with a console warning. **New world** keeps `stats`, sets the new `seed` and drops
+`at`.
+
+### Measuring performance
+
+Open https://appleseed090.github.io/acid-road/?stats on the device, let it ride for half a minute, and note
+the overlay. "CPU" is main-thread time per frame; when FPS is low but CPU time is small, the GPU is the
+limit. The GPU line says "SwiftShader" or "llvmpipe" when the browser fell back to software rendering. Watch
+"Draws" double while the Ceiling warp is active: it draws the world twice.
+
 ## Prerequisites
 
 - Node.js 20.19 or newer (CI uses Node 22) and npm.
@@ -74,6 +94,8 @@ Supporting tricks:
 | `src/render/projection.ts` | Perspective matrix | nothing |
 | `src/render/renderer.ts` | WebGL2 context, chunk streaming, drawing | world, shaders |
 | `src/ui/controls.ts` | Panel, buttons, keyboard shortcuts | warps (names and ranges) |
+| `src/ui/rideParams.ts` | Parses and writes the `seed`, `at` and `stats` link options | nothing |
+| `src/ui/statsOverlay.ts`, `src/ui/frameStatistics.ts` | The `?stats` performance overlay | nothing |
 | `src/main.ts` | Wires everything together and runs the frame loop | all of the above |
 
 Everything under `src/world/` is pure TypeScript with no WebGL or DOM dependency, so it runs and is tested in

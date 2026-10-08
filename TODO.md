@@ -15,9 +15,13 @@ External memory for Acid Road: what's unverified, what's deferred, and the const
 
 The prototype and this port have only run on a software renderer (SwiftShader in headless Chromium).
 
-- [ ] **Frame rate on a real GPU.** Measure on a desktop GPU and an integrated laptop GPU.
-- [ ] **Frame rate on phones** (iOS Safari, Android Chrome). Every chunk is drawn every frame with no culling,
-      and the Ceiling warp doubles that.
+- [ ] **Frame rate on a real GPU.** Measure on a desktop GPU and an integrated laptop GPU: open the live page
+      with `?stats` (see README, "Measuring performance") and record the overlay here.
+- [ ] **Frame rate on phones** (iOS Safari, Android Chrome), the same way. Every chunk is drawn every frame
+      with no culling, and the Ceiling warp doubles that.
+
+Baseline, for comparison only: headless Chromium on SwiftShader (no GPU) at 1280x720 runs at about 2 FPS
+with 1.4 ms of CPU per frame, 51 draws and 321k triangles (Ceiling active), so the software GPU is the limit.
 - [ ] **The automatic warp sequence over a long ride.** Some keyframe combinations may look messy, for example
       strong Twist plus Roll plus Pinch together. Watch several seeds for several thousand metres.
 - [ ] **The mirrored Ceiling warp.** It is the roughest one: it draws the whole world a second time, clips

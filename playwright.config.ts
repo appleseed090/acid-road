@@ -17,7 +17,16 @@ export default defineConfig({
     viewport: { width: 1280, height: 720 },
     screenshot: "only-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 720 } } }],
+  projects: [{
+    name: "chromium",
+    use: {
+      ...devices["Desktop Chrome"],
+      viewport: { width: 1280, height: 720 },
+      // CI machines have no GPU. Chromium's automatic fallback to software WebGL (SwiftShader) is deprecated,
+      // so opt in explicitly rather than lose WebGL silently in a future Chromium.
+      launchOptions: { args: ["--enable-unsafe-swiftshader"] },
+    },
+  }],
   ...(deployedUrl === undefined
     ? { webServer: { command: `npx vite preview --port ${String(PREVIEW_PORT)} --strictPort`, port: PREVIEW_PORT, reuseExistingServer: !process.env["CI"] } }
     : {}),

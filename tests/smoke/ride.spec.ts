@@ -25,11 +25,17 @@ async function countDistinctColors(page: Page, png: Buffer): Promise<number> {
   }, png.toString("base64"));
 }
 
-test("the ride loads, renders terrain and logs no errors", async ({ page }) => {
+/** Collects console errors, uncaught exceptions and failed requests; every test expects none. */
+function collectErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on("console", (message) => { if (message.type() === "error") errors.push(`console.error: ${message.text()}`); });
   page.on("pageerror", (error) => { errors.push(`uncaught: ${error.message}`); });
   page.on("requestfailed", (request) => { errors.push(`request failed: ${request.url()} ${request.failure()?.errorText ?? ""}`); });
+  return errors;
+}
+
+test("the ride loads, renders terrain and logs no errors", async ({ page }) => {
+  const errors = collectErrors(page);
 
   // Pin the world seed (the app's only use of Math.random) so every run rides the same world.
   await page.addInitScript(() => { Math.random = () => 0.3141; });
@@ -48,5 +54,34 @@ test("the ride loads, renders terrain and logs no errors", async ({ page }) => {
   test.info().annotations.push({ type: "distinct colours", description: String(distinctColors) });
   expect(distinctColors, "canvas looks blank or sky-only").toBeGreaterThan(MIN_DISTINCT_COLORS);
 
+  expect(errors).toEqual([]);
+});
+
+test("?seed and ?at open a given world at a given distance, and the URL names the world", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.emulateMedia({ reducedMotion: "reduce" }); // starts paused, so the distance stays put
+  await page.goto("./?seed=4242&at=5000");
+  await expect(page.locator("#readout")).toHaveText("5,000 m", { timeout: 30_000 });
+  expect(new URL(page.url()).search).toBe("?seed=4242&at=5000");
+
+  await page.locator("#reseed").click();
+  await expect(page.locator("#readout")).toHaveText("0 m");
+  const search = new URL(page.url()).searchParams;
+  expect(search.get("seed")).toMatch(/^\d+$/);
+  expect(search.get("seed")).not.toBe("4242");
+  expect(search.has("at")).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test("?stats shows the performance overlay; without it there is none", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("./?stats");
+  await expect(page.locator(".stats")).toContainText(/^FPS \d/, { timeout: 30_000 });
+  await expect(page.locator(".stats")).toContainText("GPU ");
+  expect(new URL(page.url()).search).toMatch(/^\?stats&seed=\d+$/);
+
+  await page.goto("./");
+  await expect(page.locator("#readout")).not.toHaveText("", { timeout: 30_000 });
+  await expect(page.locator(".stats")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
