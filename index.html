@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Acid Road</title>
+<meta name="description" content="A live ride down a straight road through random block terrain that warps as you travel.">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&family=DM+Mono:wght@400;500&display=swap">
+<script type="module" src="./src/main.ts"></script>
+</head>
+<body>
+<canvas id="view" aria-label="Live ride down a straight road through warping block terrain"></canvas>
+<div id="fail" hidden></div>
+
+<div class="hud">
+  <div class="panel" id="panel">
+    <div class="group">
+      <label for="speed">Speed</label><input id="speed" type="range" min="0" max="220" step="1" value="48"><output id="speedOut"></output>
+      <label for="strength">Strength</label><input id="strength" type="range" min="0" max="150" step="1" value="100"><output id="strengthOut"></output>
+      <label for="fov">View angle</label><input id="fov" type="range" min="60" max="130" step="1" value="104"><output id="fovOut"></output>
+    </div>
+    <div class="heading">WARPS</div>
+    <label class="check" for="manual"><input id="manual" type="checkbox"> Set the warps by hand</label>
+    <div class="group" id="warps"></div>
+  </div>
+  <div class="bar">
+    <span class="name">ACID ROAD</span>
+    <button id="play" type="button">Pause</button>
+    <button id="reseed" type="button">New world</button>
+    <button id="toggle" type="button" aria-expanded="true" aria-controls="panel">Hide controls</button>
+    <span class="readout" id="readout"></span>
+  </div>
+</div>
+</body>
+</html>
