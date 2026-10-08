@@ -28,16 +28,17 @@ with 1.4 ms of CPU per frame, 51 draws and 321k triangles (Ceiling active), so t
 
 ## Reviewed
 
-- [x] **The automatic warp sequence over a long ride** (contact sheet, seeds 4242 and 12345, 0 to 12.4 km
-      every 210 m). No combination looked broken. The busiest, such as Twist 0.96 with Rise 0.68
+- [x] **The automatic warp sequence over a long ride** (contact sheet, seeds 4242, 12345, 777 and 2026, 0 to
+      12.4 km every 210 m). No combination looked broken. The busiest, such as Twist 0.96 with Rise 0.68
       (seed 12345, `at=4620`) or Roll 0.74 into a narrow tube (12345, `at=5460`), stay readable. Long calm
-      stretches happen (4242 from 8,820 to 10,080 m).
+      stretches happen (4242 from 8,820 to 10,080 m), but over 200 seeds x 50 km the ride is fully calm only
+      5% of the distance; each warp is active (above 0.05) for 28 to 30% of it.
 - [x] **The mirrored Ceiling warp.** At full strength, tall pillars from the main world pierce the mirrored
       layer and join floor to ceiling; it reads as deliberate. During the fade-in (Ceiling under 0.35) a pale
       fog-coloured wedge of the mirrored world shows in the sky (4242, `at=7260`); subtle. The keyframe rule
       that keeps Ceiling out of a closed tube does not cover blends between keyframes (4242, `at=7220` mixes
       Roll 0.46 with Ceiling 0.09), but those frames look fine. Its cost (double draws and triangles) is still
-      unmeasured on real GPUs.
+      unmeasured on real GPUs, and Ceiling is active for about 28% of the distance like every other warp.
 
 ## Known issues
 
