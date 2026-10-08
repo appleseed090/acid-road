@@ -19,9 +19,21 @@ The prototype and this port have only run on a software renderer (SwiftShader in
       with `?stats` (see README, "Measuring performance") and record the overlay here.
       - Safari on a Mac, "Apple GPU", 2880x1640 canvas at 2x: 60 FPS (display cap), 16.7 ms frames, worst
         18.0; CPU 0.5 ms/frame; 26 draws, 211k triangles; chunks 1.0 ms each. Calm stretch, no Ceiling.
-        Still to measure there: a Ceiling stretch (double draws), and a discrete or older integrated GPU.
+      - Same Mac, Ceiling 0.85 with Twist 0.15 (seed 2026, ~2,230 m): 60 FPS, 16.7 ms frames, worst 21.0;
+        CPU 0.6 ms/frame, worst 6.0; 51 draws, 343k triangles; chunks 3.0 ms each. The double draw costs no
+        frames. Still to measure: a discrete or older integrated GPU.
 - [ ] **Frame rate on phones** (iOS Safari, Android Chrome), the same way. Every chunk is drawn every frame
       with no culling, and the Ceiling warp doubles that.
+      - iPhone, "Apple GPU", WebKit (in-app browser), canvas 640x1104 (device 3x, rendering capped at 2x):
+        - Ceiling about 0.7 plus Twist (seed 2026, ~2,320 m): 59.9 FPS, 16.7 ms frames, worst 17.0; CPU
+          0.8 ms/frame, worst 6.0; 51 draws, 345k triangles; chunks 4.0 ms each. The double draw costs no frames.
+        - Heavy Roll (seed 12345, ~5,540 m): 52.7 FPS in a window holding one 138 ms frame; the other frames
+          averaged 16.7 ms. CPU (worst 8 ms) and chunk builds (worst 1 ms) did not cause it. It came about
+          1.7 s after load. Still to check: does it recur over 30 s, or only happen once after load?
+      - Still to measure: Android Chrome, and an older or weaker phone.
+
+So far no device has needed performance work; the deferred optimisations below can wait for a device that
+does.
 
 Baseline, for comparison only: headless Chromium on SwiftShader (no GPU) at 1280x720 runs at about 2 FPS
 with 1.4 ms of CPU per frame, 51 draws and 321k triangles (Ceiling active), so the software GPU is the limit.
