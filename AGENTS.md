@@ -42,6 +42,8 @@ Run `npm run check` before every push. The smoke test needs Playwright's Chromiu
   say so in the commit message.
 - Unit-test pure logic and anything that crosses a boundary (URL parameters, keyframe ranges). Verify
   rendering and page behaviour with the Playwright smoke test, not with unit tests.
+- After changing warps, the warp director or the shaders, run `npm run contact-sheet` and look at the frames:
+  unit tests check ranges and determinism, not whether a ride looks good.
 - The smoke test pins the seed by stubbing `Math.random` and fails on any console error, page error or
   failed request. Keep the console clean: no `console.error` for expected situations.
 

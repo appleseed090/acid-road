@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:smoke": "playwright test",
-    "check": "npm run lint && npm run build && npm test && npm run test:smoke"
+    "check": "npm run lint && npm run build && npm test && npm run test:smoke",
+    "contact-sheet": "node scripts/contact-sheet.ts"
   },
   "engines": {
     "node": ">=20.19"

@@ -53,6 +53,12 @@ npm run check         # all of the above, in the order CI runs them
 against a deployed copy instead, for example
 `SMOKE_BASE_URL=https://appleseed090.github.io/acid-road/ npx playwright test`.
 
+To review how the automatic warps look over a long ride, `npm run contact-sheet` renders a still frame every
+210 m for 60 frames on each of four seeds and writes `contact-sheet/index.html`. Each frame's caption lists
+the active warps, and clicking a frame opens that point on the live site. It also needs a fresh build, takes
+about 20 minutes on a software renderer, and needs Node 22.18 or newer. Its options (seeds, spacing, frame
+count, frame size) are documented at the top of `scripts/contact-sheet.ts`.
+
 ## How the warp trick works
 
 **The world never moves or changes shape.** Terrain is ordinary static block geometry, built once per
