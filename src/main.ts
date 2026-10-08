@@ -1,7 +1,7 @@
 import "./style.css";
 import { Renderer } from "./render/renderer";
 import { Controls } from "./ui/controls";
-import { parseRideParams, urlForRide } from "./ui/rideParams";
+import { parseRideParams, urlForRide, urlWithFlag } from "./ui/rideParams";
 import { StatsOverlay } from "./ui/statsOverlay";
 import { biomeColor, BiomeColor, BiomeNumber } from "./world/biomes";
 import { ChunkMeshBuilder } from "./world/chunkMesh";
@@ -46,14 +46,18 @@ function start(): void {
   let travel = params.startTravel;
   showRideInUrl(world.seed, travel);
 
+  let stats = params.showStats ? new StatsOverlay() : null;
   const controls = new Controls(() => {
     world = new World(randomSeed());
     travel = 0;
     showRideInUrl(world.seed, travel);
     renderer.clearChunks();
     renderer.streamChunks(world, travel, CHUNK_COUNT);
+  }, params.showStats, (shown) => {
+    stats?.remove();
+    stats = shown ? new StatsOverlay() : null;
+    history.replaceState(history.state, "", urlWithFlag(location.href, "stats", shown));
   });
-  const stats = params.showStats ? new StatsOverlay() : null;
   const deviceInfo = () => ({ gpu: renderer.describeGpu(), canvasWidth: canvas.width, canvasHeight: canvas.height });
 
   // Start with the warps already at the starting point's values, so a ride opened mid-road (?at=) shows that

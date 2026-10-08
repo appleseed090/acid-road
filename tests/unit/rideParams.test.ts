@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_SEED, parseRideParams, urlForRide } from "../../src/ui/rideParams";
+import { MAX_SEED, parseRideParams, urlForRide, urlWithFlag } from "../../src/ui/rideParams";
 
 describe("parseRideParams", () => {
   it("defaults to a random world from the start, without stats", () => {
@@ -40,5 +40,19 @@ describe("urlForRide", () => {
   it("round-trips through parseRideParams", () => {
     const url = new URL(urlForRide(base, 777, 1234.25));
     expect(parseRideParams(url.search)).toMatchObject({ seed: 777, startTravel: 1234.25, problems: [] });
+  });
+});
+
+describe("urlWithFlag", () => {
+  const base = "https://appleseed090.github.io/acid-road/";
+
+  it("adds a bare flag once and keeps other parameters", () => {
+    expect(urlWithFlag(`${base}?seed=5&at=100`, "stats", true)).toBe(`${base}?seed=5&at=100&stats`);
+    expect(urlWithFlag(`${base}?stats&seed=5`, "stats", true)).toBe(`${base}?stats&seed=5`);
+  });
+
+  it("removes the flag", () => {
+    expect(urlWithFlag(`${base}?stats&seed=5`, "stats", false)).toBe(`${base}?seed=5`);
+    expect(urlWithFlag(`${base}?stats`, "stats", false)).toBe(base);
   });
 });

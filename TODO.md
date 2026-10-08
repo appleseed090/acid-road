@@ -17,6 +17,9 @@ The prototype and this port have only run on a software renderer (SwiftShader in
 
 - [ ] **Frame rate on a real GPU.** Measure on a desktop GPU and an integrated laptop GPU: open the live page
       with `?stats` (see README, "Measuring performance") and record the overlay here.
+      - Safari on a Mac, "Apple GPU", 2880x1640 canvas at 2x: 60 FPS (display cap), 16.7 ms frames, worst
+        18.0; CPU 0.5 ms/frame; 26 draws, 211k triangles; chunks 1.0 ms each. Calm stretch, no Ceiling.
+        Still to measure there: a Ceiling stretch (double draws), and a discrete or older integrated GPU.
 - [ ] **Frame rate on phones** (iOS Safari, Android Chrome), the same way. Every chunk is drawn every frame
       with no culling, and the Ceiling warp doubles that.
 

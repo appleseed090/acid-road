@@ -11,8 +11,8 @@ export interface DeviceInfo {
 }
 
 /**
- * Performance readout in the top-left corner, shown when the page URL has `?stats`. It is created only when
- * enabled, so a normal ride pays nothing for it.
+ * Performance readout in the top-left corner, shown when the page URL has `?stats` or the user presses
+ * "Show stats". It exists only while shown, so a normal ride pays nothing for it.
  */
 export class StatsOverlay {
   private readonly element: HTMLPreElement;
@@ -24,6 +24,11 @@ export class StatsOverlay {
     this.element.setAttribute("aria-live", "off");
     this.element.textContent = "Measuring…";
     document.body.append(this.element);
+  }
+
+  /** Takes the overlay off the page. The instance must not be used afterwards. */
+  remove(): void {
+    this.element.remove();
   }
 
   /** Records one frame; refreshes the text about once a second. `device` is read only when refreshing. */

@@ -78,10 +78,46 @@ test("?stats shows the performance overlay; without it there is none", async ({ 
   await page.goto("./?stats");
   await expect(page.locator(".stats")).toContainText(/^FPS \d/, { timeout: 30_000 });
   await expect(page.locator(".stats")).toContainText("GPU ");
+  await expect(page.locator("#statsToggle")).toHaveText("Hide stats");
   expect(new URL(page.url()).search).toMatch(/^\?stats&seed=\d+$/);
 
   await page.goto("./");
   await expect(page.locator("#readout")).not.toHaveText("", { timeout: 30_000 });
   await expect(page.locator(".stats")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("Hide controls hides the panel, and Show controls brings it back", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("./");
+  const panel = page.locator("#panel"), toggle = page.locator("#toggle");
+  await expect(panel).toBeVisible({ timeout: 30_000 });
+  await toggle.click();
+  await expect(panel).toBeHidden();
+  await expect(toggle).toHaveText("Show controls");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await toggle.click();
+  await expect(panel).toBeVisible();
+  await expect(toggle).toHaveText("Hide controls");
+  expect(errors).toEqual([]);
+});
+
+test("Show stats and Hide stats toggle the overlay and the ?stats flag", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("./?seed=4242");
+  const button = page.locator("#statsToggle"), overlay = page.locator(".stats");
+  await expect(button).toHaveText("Show stats", { timeout: 30_000 });
+  await expect(overlay).toHaveCount(0);
+
+  await button.click();
+  await expect(overlay).toContainText(/^FPS \d/, { timeout: 30_000 });
+  await expect(button).toHaveText("Hide stats");
+  await expect(button).toHaveAttribute("aria-pressed", "true");
+  expect(new URL(page.url()).search).toBe("?seed=4242&stats");
+
+  await button.click();
+  await expect(overlay).toHaveCount(0);
+  await expect(button).toHaveText("Show stats");
+  expect(new URL(page.url()).search).toBe("?seed=4242");
   expect(errors).toEqual([]);
 });

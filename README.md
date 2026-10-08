@@ -7,7 +7,8 @@ Inspired by the "Minecraft Acid Interstate" videos; nothing from Minecraft is us
 **Live:** https://appleseed090.github.io/acid-road/
 
 Controls: the panel at the bottom left sets speed, warp strength and view angle, and lets you set the warps
-by hand. **Space** pauses, **H** hides the controls, **New world** rolls a new seed. If your system asks for
+by hand. **Space** pauses, **H** hides the controls, **New world** rolls a new seed, **Show stats** turns on
+the performance overlay. If your system asks for
 reduced motion, the ride starts paused.
 
 ### Link options
@@ -18,7 +19,7 @@ The address bar always holds a link to the current world, so you can share or bo
 | --- | --- | --- |
 | `seed` | World seed, 0 to 2147483647. Missing means a random world. | `?seed=4242` |
 | `at` | Start this many metres down the road, with the warps already as they are there. | `?seed=4242&at=5000` |
-| `stats` | Show a performance overlay: FPS, frame and CPU time, draw calls, triangles, chunk build time, canvas size, and the GPU the browser reports. | `?stats` |
+| `stats` | Show the performance overlay (the same as pressing **Show stats**): FPS, frame and CPU time, draw calls, triangles, chunk build time, canvas size, and the GPU the browser reports. | `?stats` |
 
 Invalid values are ignored with a console warning. **New world** keeps `stats`, sets the new `seed` and drops
 `at`.

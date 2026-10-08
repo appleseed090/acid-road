@@ -23,13 +23,18 @@ export class Controls {
   private readonly fovOutput = requireElement("fovOut", HTMLOutputElement);
   private readonly playButton = requireElement("play", HTMLButtonElement);
   private readonly toggleButton = requireElement("toggle", HTMLButtonElement);
+  private readonly statsButton = requireElement("statsToggle", HTMLButtonElement);
   private readonly panel = requireElement("panel", HTMLDivElement);
   private readonly readout = requireElement("readout", HTMLSpanElement);
   private readonly warpInputs: HTMLInputElement[] = [];
   private readonly warpOutputs: HTMLOutputElement[] = [];
 
-  /** @param onNewWorld Called when the user asks for a new world. */
-  constructor(onNewWorld: () => void) {
+  /**
+   * @param onNewWorld Called when the user asks for a new world.
+   * @param statsShown Whether the stats overlay starts visible.
+   * @param onStatsShownChange Called with the new state when the user shows or hides the stats overlay.
+   */
+  constructor(onNewWorld: () => void, private statsShown: boolean, onStatsShownChange: (shown: boolean) => void) {
     const warpGroup = requireElement("warps", HTMLDivElement);
     WARPS.forEach(({ name, min, max }, i) => {
       const id = `warp${String(i)}`;
@@ -52,6 +57,11 @@ export class Controls {
     this.playButton.addEventListener("click", () => { this.togglePlay(); });
     requireElement("reseed", HTMLButtonElement).addEventListener("click", onNewWorld);
     this.toggleButton.addEventListener("click", () => { this.togglePanel(); });
+    this.statsButton.addEventListener("click", () => {
+      this.statsShown = !this.statsShown;
+      this.syncLabels();
+      onStatsShownChange(this.statsShown);
+    });
     addEventListener("keydown", (event) => {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLButtonElement) return;
       if (event.code === "Space") { event.preventDefault(); this.togglePlay(); }
@@ -88,6 +98,8 @@ export class Controls {
     this.strengthOutput.textContent = this.strengthInput.value + "%";
     this.fovOutput.textContent = this.fovInput.value + "°";
     this.playButton.textContent = this.playing ? "Pause" : "Play";
+    this.statsButton.textContent = this.statsShown ? "Hide stats" : "Show stats";
+    this.statsButton.setAttribute("aria-pressed", String(this.statsShown));
     for (const input of this.warpInputs) input.disabled = !this.manualInput.checked;
   }
 

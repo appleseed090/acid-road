@@ -46,7 +46,19 @@ export function urlForRide(href: string, seed: number, startTravel: number): str
   url.searchParams.set("seed", String(seed));
   if (startTravel > 0) url.searchParams.set("at", String(startTravel));
   else url.searchParams.delete("at");
-  // URLSearchParams writes a bare flag like `stats` back as `stats=`; keep flags bare so the link stays tidy.
+  return tidyUrl(url);
+}
+
+/** `href` with the bare flag `name` (such as `stats`) added when `on`, removed otherwise. */
+export function urlWithFlag(href: string, name: string, on: boolean): string {
+  const url = new URL(href);
+  if (on) { if (!url.searchParams.has(name)) url.searchParams.append(name, ""); }
+  else url.searchParams.delete(name);
+  return tidyUrl(url);
+}
+
+/** URLSearchParams writes a bare flag like `stats` back as `stats=`; keep flags bare so links stay tidy. */
+function tidyUrl(url: URL): string {
   url.search = [...url.searchParams].map(([key, value]) => value === "" ? encodeURIComponent(key) : `${encodeURIComponent(key)}=${encodeURIComponent(value)}`).join("&");
   return url.toString();
 }
